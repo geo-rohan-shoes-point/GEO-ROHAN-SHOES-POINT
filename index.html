@@ -130,5 +130,44 @@ window.sb = window.supabase.createClient(
   SUPABASE_KEY
 );
 </script>
+<div id="resetPasswordBox" style="display:none;position:fixed;inset:0;background:#111;color:white;z-index:99999;padding:30px;text-align:center">
+  <h2>Set New Password</h2>
+  <input id="newPassword" type="password" placeholder="New password">
+  <br><br>
+  <input id="confirmPassword" type="password" placeholder="Confirm password">
+  <br><br>
+  <button onclick="saveNewPassword()">Update Password</button>
+  <p id="resetMessage"></p>
+</div>
+<script>
+async function saveNewPassword(){
+  const password = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const message = document.getElementById('resetMessage');
+
+  if(password.length < 6){
+    message.textContent = 'Password kam az kam 6 characters ka ho.';
+    return;
+  }
+
+  if(password !== confirm){
+    message.textContent = 'Dono passwords match nahi karte.';
+    return;
+  }
+
+  const {error} = await window.sb.auth.updateUser({
+    password: password
+  });
+
+  message.textContent = error ? error.message : 'Password successfully updated!';
+}
+</script>
+<script>
+window.sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    document.getElementById('resetPasswordBox').style.display = 'block';
+  }
+});
+</script>
 </body>
 </html>
