@@ -120,5 +120,15 @@ function logout(){closeAdmin();toast('Logged out.')}
 document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()}));
 $('year').textContent=new Date().getFullYear();render();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://iucalseqdukklmcgpzds.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_k_402sCZei4OH38XPy3wfg_UOuDNrb9';
+
+window.sb = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
 </body>
 </html>
