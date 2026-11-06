@@ -95,14 +95,59 @@ function renderAdmin(){
   list.appendChild(row);
  });
 }
-$('productForm').addEventListener('submit',e=>{
- e.preventDefault();
- const id=$('editId').value||String(Date.now());
- const old=products.find(p=>p.id===id);
- const p={id,name:$('pName').value.trim(),category:$('pCategory').value,price:Number($('pPrice').value),description:$('pDescription').value.trim(),image:currentImage||old?.image||''};
- if(!p.name||!Number.isFinite(p.price)||p.price<0)return toast('Please enter a valid product name and price.');
- const idx=products.findIndex(x=>x.id===id);if(idx>=0)products[idx]=p;else products.unshift(p);
- if(persist()){resetForm();render();toast(idx>=0?'Product updated.':'Product added.')}
+$('productForm').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const id = $('editId').value;
+  const old = products.find(p => String(p.id) === id);
+
+  const p = {
+    name: $('pName').value.trim(),
+    category: $('pCategory').value,
+    price: Number($('pPrice').value),
+    description: $('pDescription').value.trim(),
+    image_url: currentImage || old?.image || '',
+    is_active: true
+  };
+
+  if (!p.name || !Number.isFinite(p.price) || p.price < 0) {
+    return toast('Please enter a valid product name and price.');
+  }
+
+  let result;
+
+  if (id && old) {
+    result = await window.sb
+      .from('products')
+      .update(p)
+      .eq('id', Number(id))
+      .select()
+      .single();
+  } else {
+    result = await window.sb
+      .from('products')
+      .insert(p)
+      .select()
+      .single();
+  }
+
+  if (result.error) {
+    return toast('Save failed: ' + result.error.message);
+  }
+
+  const saved = {
+    ...result.data,
+    image: result.data.image_url || ''
+  };
+
+  const idx = products.findIndex(x => String(x.id) === String(saved.id));
+
+  if (idx >= 0) products[idx] = saved;
+  else products.unshift(saved);
+
+  resetForm();
+  render();
+  toast('Product saved successfully!');
 });
 $('pImage').addEventListener('change',e=>{
  const file=e.target.files[0];if(!file)return;
@@ -160,6 +205,29 @@ window.sb = window.supabase.createClient(
   SUPABASE_KEY
 );
 </script>
+<script>
+async function loadSupabaseProducts() {
+  const { data, error } = await window.sb
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    toast('Products load failed: ' + error.message);
+    return;
+  }
+
+  products = data.map(p => ({
+    ...p,
+    image: p.image_url || ''
+  }));
+
+  render();
+}
+
+loadSupabaseProducts();
+</script> 
 <div id="resetPasswordBox" style="display:none;position:fixed;inset:0;background:#111;color:white;z-index:99999;padding:30px;text-align:center">
   <h2>Set New Password</h2>
   <input id="newPassword" type="password" placeholder="New password">
