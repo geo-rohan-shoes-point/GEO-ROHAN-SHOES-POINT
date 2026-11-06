@@ -60,7 +60,7 @@ nav{display:flex;gap:24px;font-size:11px;letter-spacing:1px;text-transform:upper
   <div class="panel"><h3>Your products <span id="countLabel" style="color:var(--gold);font:14px 'DM Sans'"></span></h3><div class="admin-list" id="adminList"></div></div>
  </div>
 </section>
-<div class="login-overlay" id="loginOverlay"><div class="login-card"><div class="eyebrow">GEO ROHAN · PRIVATE AREA</div><h2>Admin access</h2><p class="muted">Enter the demo password to open product management.</p><input id="adminPassword" type="password" placeholder="Demo password" autocomplete="current-password"><button class="btn gold" style="width:100%" onclick="login()">Unlock dashboard</button><button class="btn" style="width:100%;margin-top:9px" onclick="document.getElementById('loginOverlay').classList.remove('show')">Cancel</button><p class="muted" style="font-size:10px;margin-top:14px">Demo password: <b style="color:var(--gold)">rohan123</b></p></div></div>
+<div class="login-overlay" id="loginOverlay"><div class="login-card"><div class="eyebrow">GEO ROHAN · PRIVATE AREA</div><h2>Admin access</h2><p class="muted">Enter the demo password to open product management.</p><input id="adminEmail" type="email" placeholder="Admin email" autocomplete="username"><input id="adminPassword" type="password" placeholder="Demo password" autocomplete="current-password"><button class="btn gold" style="width:100%" onclick="login()">Unlock dashboard</button><button class="btn" style="width:100%;margin-top:9px" onclick="document.getElementById('loginOverlay').classList.remove('show')">Cancel</button><p class="muted" style="font-size:10px;margin-top:14px">Demo password: <b style="color:var(--gold)">rohan123</b></p></div></div>
 <div class="toast" id="toast"></div>
 <script>
 const KEY='geo_rohan_products_v1';
@@ -114,9 +114,39 @@ function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$('edi
 function deleteProduct(id){const p=products.find(x=>x.id===id);if(!p||!confirm(`Delete "${p.name}"?`))return;products=products.filter(x=>x.id!==id);if(persist()){render();toast('Product deleted.')} }
 function resetForm(){$('productForm').reset();$('editId').value='';currentImage='';$('imagePreview').style.display='none';$('formTitle').textContent='Add a product';$('saveBtn').textContent='Save product'}
 function openLogin(){$('loginOverlay').classList.add('show');$('adminPassword').value='';$('adminPassword').focus()}
-function login(){if($('adminPassword').value!=='rohan123')return toast('Incorrect demo password.');$('loginOverlay').classList.remove('show');$('storefront').style.display='none';$('admin').classList.add('show');renderAdmin()}
+async function login(){
+  const email = $('adminEmail').value.trim();
+  const password = $('adminPassword').value;
+
+  if(!email || !password){
+    return toast('Email aur password enter karein.');
+  }
+
+  const {data, error} = await window.sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if(error){
+    return toast(error.message);
+  }
+
+  if(data.user.id !== '7969a00f-f643-48df-aa3d-57bed70d72da'){
+    await window.sb.auth.signOut();
+    return toast('Admin access denied.');
+  }
+
+  $('loginOverlay').classList.remove('show');
+  $('storefront').style.display='none';
+  $('admin').classList.add('show');
+  renderAdmin();
+}
 function closeAdmin(){$('admin').classList.remove('show');$('storefront').style.display='block';window.scrollTo(0,0)}
-function logout(){closeAdmin();toast('Logged out.')}
+async function logout(){
+  await window.sb.auth.signOut();
+  closeAdmin();
+  toast('Logged out.');
+}
 document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()}));
 $('year').textContent=new Date().getFullYear();render();
 </script>
